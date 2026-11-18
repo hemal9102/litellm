@@ -2696,6 +2696,30 @@ def test_request_skips_budget_checks_for_mcp_tool_calls_that_cost_nothing(
     ), f"{route} {request_body}"
 
 
+def test_request_skips_budget_checks_prices_the_server_a_colliding_tool_name_routes_to(monkeypatch):
+    from litellm.proxy.auth.auth_checks import request_skips_budget_checks
+    from litellm.proxy.mcp_server.mcp_server_manager import global_mcp_server_manager
+
+    free_server = ("docs-id", "docs", None)
+    monkeypatch.setattr(
+        global_mcp_server_manager,
+        "config_mcp_servers",
+        {server[0]: _mcp_server(*server) for server in (free_server, _PAID_SERVER)},
+    )
+    monkeypatch.setattr(
+        global_mcp_server_manager,
+        "published_tool_routes",
+        {"search": "docs", "docs-search": _PAID_SERVER[1]},
+    )
+
+    body = {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "docs-search"}}
+    routed = global_mcp_server_manager.get_mcp_server_from_tool_name("docs-search")
+    assert routed is not None
+    assert request_skips_budget_checks(
+        route="/mcp", model=None, llm_router=None, request_body=body
+    ) is (routed.server_id == free_server[0])
+
+
 @pytest.mark.asyncio
 async def test_get_skill_names_from_access_groups_reads_cached_group_rows():
     from litellm.proxy._types import LiteLLM_AccessGroupTable
