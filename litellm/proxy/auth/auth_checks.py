@@ -1162,6 +1162,7 @@ def is_zero_cost_mcp_tool_call(route: str, request_body: Mapping[str, object]) -
         server
         for server in (
             global_mcp_server_manager.server_owning_tool_name_prefix(tool_name),
+            global_mcp_server_manager.get_mcp_server_from_tool_name(tool_name),
             (
                 global_mcp_server_manager.get_mcp_server_by_id(requested_server_id)
                 or global_mcp_server_manager.get_mcp_server_by_identifier(requested_server_id)
